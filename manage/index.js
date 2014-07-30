@@ -199,11 +199,11 @@ app.get("/r/:short_id", function(req, res) {
 
   EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
     if(!adopter) {
-      res.send("invalid id")
+      res.status(400).send("ERROR: Invalid referer ID")
     } else if(short_id == req.cookies.current_adopter_id) {
       request(req.ep_user.url_welcome, function(_w_err, _w_resp, _w_body) {
         if (_w_err) {
-          res.status(500).send('Couldnt access welcome static page')
+          res.status(500).send('ERROR: Cannot access welcome static page')
         } else {
           get_welcome_page_context(req, res, function(context) {
             res.send(Mustache.render(_w_body, context))
@@ -236,7 +236,7 @@ app.get("/list.json",
     //MAYBE ANOTHER PASSPORT STRATEGY WHICH ALLOWS US TO CHECK FOR REUQUEST PARAMS
     //OR HANDLE IT IN A MIDDLEWARE
     if (req.user && !req.ep_user._id.equals(req.user._id)) {
-      return res.status(403).send("Invalid user")
+      return res.status(403).send("ERROR: Invalid user")
     }
     //END DANGER ZONE
 
