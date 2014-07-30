@@ -93,8 +93,21 @@ app.use(function(req, res, next) {
   })
 })
 
+var Mustache = require("mustache")
+var request = require("request")
+
 app.get("/", function(req, res) {
-  res.send("You are accessing the page for " + req.user.name)
+  request(req.user.url_landing, function(landing_err, landing_resp, landing_body) {
+    if (landing_err) {
+      res.status(500).send('Couldnt access landing static page')
+    } else {
+      var context = {
+        "name": req.user.name,
+        "form_action": "/"
+      }
+      res.send(Mustache.render(landing_body, context))
+    }
+  })
 })
 
 app.get("/r/:short_id", function(req, res) {
