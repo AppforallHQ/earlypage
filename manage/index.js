@@ -167,6 +167,12 @@ app.get("/r/:short_id", function(req, res) {
   })
 })
 
+app.get("/list.json", function(req, res) {
+  EarlyAdopter.find({user: req.user._id}).lean().exec(function(err, objs) {
+    return res.end(JSON.stringify(objs))
+  })
+})
+
 var server = app.listen(3069, function() {
   console.log('Listening on port %d', server.address().port);
 })
