@@ -70,12 +70,14 @@ app.get("/", function(req, res) {
 })
 
 app.get("/r/:short_id", function(req, res) {
-  var short_id = req.query.short_id
+  var short_id = req.param("short_id")
+
   EarlyAdopter.findOne({_id: short_id}, function(err, adopter) {
     if(!adopter) {
       res.send("invalid id")
     } else {
-      res.send("cool " + adopter.email)
+      res.cookie('referer', adopter._id)
+      res.redirect('/')
     }
   })
 })
