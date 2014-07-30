@@ -8,6 +8,16 @@ PROJECT = {
   active: true
 }
 
+TRIFORK = {
+  name: "ترایفورک",
+  user: "PROJECT",
+  pass: "",
+  host: "trifork.127.0.0.1.xip.io:3069",
+  url_landing: "http://localhost:8069/static/landing.html",
+  url_welcome: "http://localhost:8069/static/welcome.html",
+  active: true
+}
+
 var mongoose = require("mongoose")
 mongoose.connect("mongodb://localhost/earlypage")
 
@@ -21,13 +31,6 @@ var User = mongoose.model('User', {
   active: Boolean
 })
 
-User.remove({}, function(err) {
-  User.create(PROJECT, function() {
-    User.find(function(err, objs) {
-      console.log(objs)
-    })
-  })
-})
 
 var EarlyAdopter = mongoose.model('EarlyAdopter', {
   referer: {
@@ -46,6 +49,31 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
     retries: 10
   }
 })
+
+User.remove({}, function(err) {
+  User.create(TRIFORK)
+  User.create(PROJECT, function(err, obj) {
+    EarlyAdopter.remove({}, function(err) {
+      JOHN_DOE = {
+        referer: null,
+        email: "foo@example.com",
+        created_at: Date.now(),
+        user: obj._id,
+      }
+
+      EarlyAdopter.create(JOHN_DOE, function() {
+        EarlyAdopter.find(function(err, objs) {
+          console.log(objs)
+        })
+      })
+    })
+
+    User.find(function(err, objs) {
+      console.log(objs)
+    })
+  })
+})
+
 
 var express = require("express"),
     app = express()
