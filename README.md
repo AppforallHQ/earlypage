@@ -21,16 +21,6 @@ Setup and run puppet manifests
         git push digital-ocean master:master -f
         ssh root@earlypage.FQDN "cd /app/earlypage/puppet; sudo puppet apply manifests/site.pp --modulepath=modules"
 
-> **NOTE**
->
-> You might need to ssh bitbucket for the first time to add it to known hosts.
-
-> Just go to `/tmp` and run
-
->     git clone git@bitbucket.org:PROJECT/afbackenddeploy.git
-
-> As root. Don't forget to copy `id_rsa.pub` of root as bitbucket deployment key.
-
 Deployment
 ==========
 
@@ -57,4 +47,4 @@ Deployment
         cd /app/earlypage
         deploy/before_restart
         ./export_procfile
-        sudo service earlypage start
+        sudo service ep_manage start
