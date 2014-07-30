@@ -151,11 +151,13 @@ app.get("/r/:short_id", function(req, res) {
         if (_w_err) {
           res.status(500).send('Couldnt access welcome static page')
         } else {
-          var context = {
-            "queue_length": 0,
-            "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
-          }
-          res.send(Mustache.render(_w_body, context))
+          EarlyAdopter.count({user: req.user._id}, function(err, count) {
+            var context = {
+              "queue_length": count,
+              "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
+            }
+            res.send(Mustache.render(_w_body, context))
+          })
         }
       })
     } else {
