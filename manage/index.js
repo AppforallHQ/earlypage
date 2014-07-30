@@ -126,9 +126,11 @@ app.post("/", function(req, res) {
     if(!obj) {
       EarlyAdopter.create(adopter_obj, function(err, obj) {
         res.cookie('current_adopter_id', obj._id)
+        var share_url = '/r/' + obj._id
         if (req.xhr) {
+          //handle ajax
         } else {
-          res.redirect('/r/' + obj._id)
+          res.redirect(share_url)
         }
       })
     } else {
@@ -144,7 +146,17 @@ app.get("/r/:short_id", function(req, res) {
     if(!adopter) {
       res.send("invalid id")
     } else if(short_id == req.cookies.current_adopter_id) {
-      res.send('foooo')
+      request(req.user.url_welcome, function(_w_err, _w_resp, _w_body) {
+        if (_w_err) {
+          res.status(500).send('Couldnt access welcome static page')
+        } else {
+          var context = {
+            "queue_length": 0,
+            "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
+          }
+          res.send(Mustache.render(_w_body, context))
+        }
+      })
     } else {
       res.cookie('referer', adopter._id)
       res.redirect('/')
