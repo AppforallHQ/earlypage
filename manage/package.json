@@ -17,6 +17,7 @@
     "mustache": "~0.8.2",
     "request": "~2.39.0",
     "body-parser": "~1.5.2",
-    "passport-http": "~0.2.2"
+    "passport-http": "~0.2.2",
+    "validator": "~3.16.1"
   }
 }

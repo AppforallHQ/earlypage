@@ -2,6 +2,14 @@
 
 <p>you have requested the page for {{name}}</p>
 
-<form action="{{form_action}}" method="POST">
+{{#errors.length}}
+<ul>
+{{#errors}}
+  <li>{{code}}</li>
+{{/errors}}
+</ul>
+{{/errors.length}}
+
+<form action="{{& form_action}}" method="{{form_method}}">
   <input type="email" name="email" placeholder="john@example.com" />
 </form>

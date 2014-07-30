@@ -118,19 +118,25 @@ app.use(function(req, res, next) {
 var Mustache = require("mustache")
 var request = require("request")
 
-app.get("/", function(req, res) {
+var render_landing_page = function (req, res, context) {
   request(req.ep_user.url_landing, function(_l_err, _l_resp, _l_body) {
     if (_l_err) {
-      res.status(500).send('Couldnt access landing static page')
+      return res.status(500).send('Couldnt access landing static page')
     } else {
-      var context = {
-        "name": req.ep_user.name,
-        "form_action": "/"
-      }
-      res.send(Mustache.render(_l_body, context))
+      return res.send(Mustache.render(_l_body, context))
     }
   })
+}
+
+app.get("/", function(req, res) {
+  var context = {
+    "name": req.ep_user.name,
+    "form_action": "/"
+  }
+  return render_landing_page(req, res, context)
 })
+
+var validator = require('validator')
 
 app.post("/", function(req, res) {
   var adopter_obj = {
@@ -141,7 +147,22 @@ app.post("/", function(req, res) {
   }
 
   var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
-  console.log(adopter_query)
+
+  if (!validator.isEmail(adopter_obj)) {
+    var errors = [{"code": "invalid-email-address"}]
+    var context = {
+      "name": req.ep_user.name,
+      "form_action": "/",
+      "form_method": "POST",
+      "errors": errors
+    }
+
+    if (req.xhr) {
+
+    } else {
+      return render_landing_page(req, res, context)
+    }
+  }
 
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
     if(!obj) {
