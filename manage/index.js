@@ -14,7 +14,7 @@ TRIFORK = {
   pass: "t",
   host: "trifork.127.0.0.1.xip.io:3069",
   url_landing: "http://localhost:8069/static/landing.html",
-  url_welcome: "http://localhost:8069/static/welcome.html",
+  url_welcome: null,
   active: true
 }
 
@@ -201,7 +201,7 @@ app.get("/r/:short_id", function(req, res) {
   EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
     if(!adopter) {
       res.status(400).send("ERROR: Invalid referer ID")
-    } else if(short_id == req.cookies.current_adopter_id) {
+    } else if(req.ep_user.url_welcome != null && short_id == req.cookies.current_adopter_id) {
       request(req.ep_user.url_welcome, function(_w_err, _w_resp, _w_body) {
         if (_w_err) {
           res.status(500).send('ERROR: Cannot access welcome static page')
