@@ -98,15 +98,15 @@ var Mustache = require("mustache")
 var request = require("request")
 
 app.get("/", function(req, res) {
-  request(req.user.url_landing, function(landing_err, landing_resp, landing_body) {
-    if (landing_err) {
+  request(req.user.url_landing, function(_l_err, _l_resp, _l_body) {
+    if (_l_err) {
       res.status(500).send('Couldnt access landing static page')
     } else {
       var context = {
         "name": req.user.name,
         "form_action": "/"
       }
-      res.send(Mustache.render(landing_body, context))
+      res.send(Mustache.render(_l_body, context))
     }
   })
 })
