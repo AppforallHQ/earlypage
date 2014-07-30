@@ -129,6 +129,7 @@ var render_landing_page = function (req, res, context) {
 }
 
 app.get("/", function(req, res) {
+  //TODO: MIGHT NEED REFACTOR, ALONG WITH THE PART OF CODE LABLED WITH XXXXXX
   var context = {
     "name": req.ep_user.name,
     "form_action": "/"
@@ -160,10 +161,10 @@ app.post("/", function(req, res) {
 
   if (!validator.isEmail(adopter_obj)) {
     var errors = [{"code": "invalid-email-address"}]
+    //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
     var context = {
       "name": req.ep_user.name,
       "form_action": "/",
-      "form_method": "POST",
       "errors": errors
     }
 
