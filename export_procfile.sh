@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo foreman export upstart /etc/init -a earlypagemanage -u root -p 3000
+sudo foreman export upstart /etc/init -a ep_manage -u root -p 3000
