@@ -1,0 +1,5 @@
+#!/bin/sh
+sudo stop ep_manage
+./export_procfile
+sudo start ep_manage
+echo "restarting ep_manage service"
