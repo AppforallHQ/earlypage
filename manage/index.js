@@ -37,6 +37,13 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
   created_at: Date,
   user: {
     type: mongoose.Schema.Types.ObjectId, ref: 'User'
+  },
+  _id: {
+    type: require('mongoose-shortid'),
+    len: 6,
+    base: 16,
+    alphabet: undefined,
+    retries: 10
   }
 })
 
@@ -60,6 +67,17 @@ app.use(function(req, res, next) {
 
 app.get("/", function(req, res) {
   res.send("You are accessing the page for " + req.user.name)
+})
+
+app.get("/r/:short_id", function(req, res) {
+  var short_id = req.query.short_id
+  EarlyAdopter.findOne({_id: short_id}, function(err, adopter) {
+    if(!adopter) {
+      res.send("invalid id")
+    } else {
+      res.send("cool " + adopter.email)
+    }
+  })
 })
 
 var server = app.listen(3069, function() {
