@@ -143,7 +143,7 @@ app.post("/", function(req, res) {
 app.get("/r/:short_id", function(req, res) {
   var short_id = req.param("short_id")
 
-  EarlyAdopter.findOne({_id: short_id}, function(err, adopter) {
+  EarlyAdopter.findOne({user: req.user._id, _id: short_id}, function(err, adopter) {
     if(!adopter) {
       res.send("invalid id")
     } else if(short_id == req.cookies.current_adopter_id) {
