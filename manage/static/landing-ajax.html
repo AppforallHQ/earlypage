@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+</head>
+<body>
+
+<h1>Default EarlyPage template</h1>
+
+<p>you have requested the page for {{name}}</p>
+
+{{#errors.length}}
+<ul>
+{{#errors}}
+  <li>{{code}}</li>
+{{/errors}}
+</ul>
+{{/errors.length}}
+
+<form action="{{& form_action}}" method="POST" id="early_access_form">
+  <input type="email" name="email" placeholder="john@example.com" />
+</form>
+
+<script>
+$(function(){
+  $("#early_access_form").submit(function() {
+
+    var url = "{{& form_action}}"
+    $.ajax({
+      type: "POST",
+      url: url,
+      dataType:"json",
+      data: $(this).serialize(),
+      success: function(data) {
+        console.log(data)
+      },
+      error: function(xhr) {
+        var res = JSON.parse(xhr.responseText)
+        console.log(res)
+      }
+    })
+
+    return false
+  })
+})
+</script>
+</body>
+
+</html>

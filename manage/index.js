@@ -13,7 +13,7 @@ TRIFORK = {
   user: "trifork",
   pass: "t",
   host: "trifork.127.0.0.1.xip.io:3069",
-  url_landing: "http://localhost:8069/static/landing.html",
+  url_landing: "http://localhost:8069/static/landing-ajax.html",
   url_welcome: null,
   active: true
 }
@@ -159,17 +159,18 @@ app.post("/", function(req, res) {
 
   var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
 
-  if (!validator.isEmail(adopter_obj)) {
-    var errors = [{"code": "invalid-email-address"}]
+  //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
+  var context = {
+    "name": req.ep_user.name,
+    "form_action": "/",
+  }
+
+  if (!validator.isEmail(adopter_obj.email)) {
     //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
-    var context = {
-      "name": req.ep_user.name,
-      "form_action": "/",
-      "errors": errors
-    }
+    context["errors"] = [{"code": "invalid-email-address"}]
 
     if (req.xhr) {
-      res.json(context)
+      return res.status(400).json(context)
     } else {
       return render_landing_page(req, res, context)
     }
@@ -190,7 +191,13 @@ app.post("/", function(req, res) {
         }
       })
     } else {
-      res.send("ERROR: you have already registered")
+      context["errors"] = [{"code": "already-registered"}]
+
+      if (req.xhr) {
+        return res.status(400).json(context)
+      } else {
+        return render_landing_page(req, res, context)
+      }
     }
   })
 })
