@@ -31,10 +31,11 @@ var User = mongoose.model('User', {
   active: Boolean
 })
 
+var ShortID = require('mongoose-shortid')
 
 var EarlyAdopter = mongoose.model('EarlyAdopter', {
   referer: {
-    type: mongoose.Schema.Types.ObjectId, ref: 'EarlyAdopter'
+    type: ShortID, ref: 'EarlyAdopter'
   },
   email: String,
   created_at: Date,
@@ -42,7 +43,7 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
     type: mongoose.Schema.Types.ObjectId, ref: 'User'
   },
   _id: {
-    type: require('mongoose-shortid'),
+    type: ShortID,
     len: 6,
     base: 16,
     alphabet: undefined,
@@ -113,7 +114,7 @@ app.get("/", function(req, res) {
 
 app.post("/", function(req, res) {
   var adopter_obj = {
-    referer: req.cookies.adopter_referer,
+    referer: req.cookies.referer,
     email: req.body.email,
     created_at: Date.now(),
     user: req.user._id,
