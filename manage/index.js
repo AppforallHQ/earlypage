@@ -10,8 +10,8 @@ PROJECT = {
 
 TRIFORK = {
   name: "ترایفورک",
-  user: "PROJECT",
-  pass: "",
+  user: "trifork",
+  pass: "t",
   host: "trifork.127.0.0.1.xip.io:3069",
   url_landing: "http://localhost:8069/static/landing.html",
   url_welcome: "http://localhost:8069/static/welcome.html",
@@ -23,7 +23,10 @@ mongoose.connect("mongodb://localhost/earlypage")
 
 var User = mongoose.model('User', {
   name: String,
-  user: String,
+  user: {
+    type: String,
+    unique: true
+  },
   pass: String,
   host: String,
   url_landing: String,
