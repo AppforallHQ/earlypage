@@ -184,6 +184,8 @@ app.post("/", function(req, res) {
 
         if (req.xhr) {
           get_welcome_page_context(req, res, function(context) {
+            //ZOMG THIS IS DIRTY
+            context["share_url"] = req.protocol + '://' + req.get('host') + share_url
             res.json(context)
           })
         } else {
