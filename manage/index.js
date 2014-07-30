@@ -88,12 +88,17 @@ app.use(passport.initialize());
 app.use(require("cookie-parser")("super-secret-string"))
 app.use(require("body-parser")());
 
+//TODO: Add nice stylish 500 errors
+//      Return proper status codes
+
 app.use(function(req, res, next) {
   User.findOne({host: req.headers.host}, function(err, user) {
     if (!user) {
-      res.send("Host not configured")
+      res.status(500).send("Host not configured")
     } else if (!user.active) {
-      res.send("You are accessing page for " + user.name + ", but the earlypage is not active")
+      var msg = "You are accessing page for " +
+                user.name + ", but the earlypage is not active"
+      res.status(500).send(msg)
     } else {
       req.ep_user = user
       next()
