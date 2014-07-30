@@ -101,6 +101,15 @@ app.use(function(req, res, next) {
   })
 })
 
+app.use(function(req, res, next) {
+  EarlyAdopter.findOne({_id: req.cookies.referer}, function(err, obj) {
+    if(!obj) {
+      res.clearCookie("referer")
+    }
+    next()
+  })
+})
+
 var Mustache = require("mustache")
 var request = require("request")
 
