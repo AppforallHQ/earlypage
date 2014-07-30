@@ -79,6 +79,7 @@ var express = require("express"),
     app = express()
 
 app.use(require("cookie-parser")("super-secret-string"))
+app.use(require("body-parser")());
 
 app.use(function(req, res, next) {
   User.findOne({host: req.headers.host}, function(err, user) {
@@ -110,12 +111,40 @@ app.get("/", function(req, res) {
   })
 })
 
+app.post("/", function(req, res) {
+  var adopter_obj = {
+    referer: req.cookies.adopter_referer,
+    email: req.body.email,
+    created_at: Date.now(),
+    user: req.user._id,
+  }
+
+  var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
+  console.log(adopter_query)
+
+  EarlyAdopter.findOne(adopter_query, function(err, obj) {
+    if(!obj) {
+      EarlyAdopter.create(adopter_obj, function(err, obj) {
+        res.cookie('current_adopter_id', obj._id)
+        if (req.xhr) {
+        } else {
+          res.redirect('/r/' + obj._id)
+        }
+      })
+    } else {
+      res.send("ERROR: you have already registered")
+    }
+  })
+})
+
 app.get("/r/:short_id", function(req, res) {
   var short_id = req.param("short_id")
 
   EarlyAdopter.findOne({_id: short_id}, function(err, adopter) {
     if(!adopter) {
       res.send("invalid id")
+    } else if(short_id == req.cookies.current_adopter_id) {
+      res.send('foooo')
     } else {
       res.cookie('referer', adopter._id)
       res.redirect('/')
