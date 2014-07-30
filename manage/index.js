@@ -80,8 +80,11 @@ User.remove({}, function(err) {
 
 
 var express = require("express"),
-    app = express()
+    app = express(),
+    passport = require("passport"),
+    BasicStrategy = require('passport-http').BasicStrategy
 
+app.use(passport.initialize());
 app.use(require("cookie-parser")("super-secret-string"))
 app.use(require("body-parser")());
 
@@ -92,7 +95,7 @@ app.use(function(req, res, next) {
     } else if (!user.active) {
       res.send("You are accessing page for " + user.name + ", but the earlypage is not active")
     } else {
-      req.user = user
+      req.ep_user = user
       next()
     }
   })
@@ -102,12 +105,12 @@ var Mustache = require("mustache")
 var request = require("request")
 
 app.get("/", function(req, res) {
-  request(req.user.url_landing, function(_l_err, _l_resp, _l_body) {
+  request(req.ep_user.url_landing, function(_l_err, _l_resp, _l_body) {
     if (_l_err) {
       res.status(500).send('Couldnt access landing static page')
     } else {
       var context = {
-        "name": req.user.name,
+        "name": req.ep_user.name,
         "form_action": "/"
       }
       res.send(Mustache.render(_l_body, context))
@@ -120,7 +123,7 @@ app.post("/", function(req, res) {
     referer: req.cookies.referer,
     email: req.body.email,
     created_at: Date.now(),
-    user: req.user._id,
+    user: req.ep_user._id,
   }
 
   var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
@@ -146,15 +149,15 @@ app.post("/", function(req, res) {
 app.get("/r/:short_id", function(req, res) {
   var short_id = req.param("short_id")
 
-  EarlyAdopter.findOne({user: req.user._id, _id: short_id}, function(err, adopter) {
+  EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
     if(!adopter) {
       res.send("invalid id")
     } else if(short_id == req.cookies.current_adopter_id) {
-      request(req.user.url_welcome, function(_w_err, _w_resp, _w_body) {
+      request(req.ep_user.url_welcome, function(_w_err, _w_resp, _w_body) {
         if (_w_err) {
           res.status(500).send('Couldnt access welcome static page')
         } else {
-          EarlyAdopter.count({user: req.user._id}, function(err, count) {
+          EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
             var context = {
               "queue_length": count,
               "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
@@ -170,11 +173,34 @@ app.get("/r/:short_id", function(req, res) {
   })
 })
 
-app.get("/list.json", function(req, res) {
-  EarlyAdopter.find({user: req.user._id}).lean().exec(function(err, objs) {
-    return res.end(JSON.stringify(objs))
-  })
-})
+passport.use(new BasicStrategy(
+  function(user, pass, done) {
+    User.findOne({ user: user }, function (err, user) {
+      if (err) { return done(err) }
+      if (!user) { return done(null, false) }
+      if (user.pass != pass) { return done(null, false); }
+      return done(null, user);
+    });
+  }
+));
+
+app.get("/list.json",
+  passport.authenticate("basic", {session: false}),
+  function(req, res) {
+    //DANGER ZONE
+    //MUST DO BETTER THAN THIS
+    //MAYBE ANOTHER PASSPORT STRATEGY WHICH ALLOWS US TO CHECK FOR REUQUEST PARAMS
+    //OR HANDLE IT IN A MIDDLEWARE
+    if (req.user && !req.ep_user._id.equals(req.user._id)) {
+      return res.status(403).send("Invalid user")
+    }
+    //END DANGER ZONE
+
+    EarlyAdopter.find({user: req.ep_user._id}).lean().exec(function(err, objs) {
+      return res.end(JSON.stringify(objs))
+    })
+  }
+)
 
 var server = app.listen(3069, function() {
   console.log('Listening on port %d', server.address().port);
