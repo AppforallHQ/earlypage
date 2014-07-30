@@ -138,6 +138,16 @@ app.get("/", function(req, res) {
 
 var validator = require('validator')
 
+var get_welcome_page_context = function(req, res, callback) {
+  EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
+    var context = {
+      "queue_length": count,
+      "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
+    }
+    callback(context)
+  })
+}
+
 app.post("/", function(req, res) {
   var adopter_obj = {
     referer: req.cookies.referer,
@@ -158,7 +168,7 @@ app.post("/", function(req, res) {
     }
 
     if (req.xhr) {
-
+      res.json(context)
     } else {
       return render_landing_page(req, res, context)
     }
@@ -169,8 +179,11 @@ app.post("/", function(req, res) {
       EarlyAdopter.create(adopter_obj, function(err, obj) {
         res.cookie('current_adopter_id', obj._id)
         var share_url = '/r/' + obj._id
+
         if (req.xhr) {
-          //handle ajax
+          get_welcome_page_context(req, res, function(context) {
+            res.json(context)
+          })
         } else {
           res.redirect(share_url)
         }
@@ -192,11 +205,7 @@ app.get("/r/:short_id", function(req, res) {
         if (_w_err) {
           res.status(500).send('Couldnt access welcome static page')
         } else {
-          EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
-            var context = {
-              "queue_length": count,
-              "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
-            }
+          get_welcome_page_context(req, res, function(context) {
             res.send(Mustache.render(_w_body, context))
           })
         }
