@@ -254,6 +254,6 @@ app.get("/list.json",
   }
 )
 
-var server = app.listen(3069, function() {
+var server = app.listen(process.env.PORT, function() {
   console.log('Listening on port %d', server.address().port);
 })
