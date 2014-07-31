@@ -43,8 +43,10 @@ var User = mongoose.model('User', {
   },
   pass: String,
   host: String,
+  jsonp: Boolean,
   url_landing: String,
   url_welcome: String,
+  refid_param: String,
   active: Boolean
 })
 
@@ -80,7 +82,8 @@ User.remove({}, function(err) {
 var express = require("express"),
     app = express(),
     passport = require("passport"),
-    BasicStrategy = require('passport-http').BasicStrategy
+    BasicStrategy = require('passport-http').BasicStrategy,
+    url = require("url")
 
 app.use(passport.initialize());
 app.use(require("cookie-parser")("super-secret-string"))
@@ -130,7 +133,7 @@ app.get("/", function(req, res) {
   //TODO: MIGHT NEED REFACTOR, ALONG WITH THE PART OF CODE LABLED WITH XXXXXX
   var context = {
     "name": req.ep_user.name,
-    "form_action": "/"
+    "form_action": "/signup"
   }
   return render_landing_page(req, res, context)
 })
@@ -147,10 +150,14 @@ var get_welcome_page_context = function(req, res, callback) {
   })
 }
 
-app.post("/", function(req, res) {
+app.get("/signup", function(req, res) {
+  var referrer_from_url
+  if (req.headers.referer) {
+    referrer_from_url = url.parse(req.headers.referer, true).query[req.ep_user.refid_param]
+  }
   var adopter_obj = {
-    referrer: req.body.referrer || req.cookies.referrer,
-    email: req.body.email,
+    referrer: referrer_from_url || req.cookies.referrer,
+    email: req.query.email,
     created_at: Date.now(),
     user: req.ep_user._id,
   }
@@ -160,15 +167,16 @@ app.post("/", function(req, res) {
   //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
   var context = {
     "name": req.ep_user.name,
-    "form_action": "/",
+    "form_action": "/signup",
   }
 
+  console.log(adopter_obj)
   if (!validator.isEmail(adopter_obj.email)) {
     //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
-    context["errors"] = [{"code": "invalid-email-address"}]
+    context["error"] = "invalid-email"
 
-    if (req.xhr) {
-      return res.status(400).json(context)
+    if (req.ep_user.jsonp === true) {
+      return res.jsonp(context)
     } else {
       return render_landing_page(req, res, context)
     }
@@ -180,21 +188,23 @@ app.post("/", function(req, res) {
         res.cookie('current_adopter_id', obj._id)
         var share_url = '/r/' + obj._id
 
-        if (req.xhr) {
+        console.log(req.ep_user)
+        if (req.ep_user.jsonp === true) {
           get_welcome_page_context(req, res, function(context) {
             //ZOMG THIS IS DIRTY
             context["share_url"] = req.protocol + '://' + req.get('host') + share_url
-            res.json(context)
+            context["invite_code"] = obj._id
+            res.jsonp(context)
           })
         } else {
           res.redirect(share_url)
         }
       })
     } else {
-      context["errors"] = [{"code": "already-registered"}]
+      context["error"] = "already-registered"
 
-      if (req.xhr) {
-        return res.status(400).json(context)
+      if (req.ep_user.jsonp === true) {
+        return res.jsonp(context)
       } else {
         return render_landing_page(req, res, context)
       }
