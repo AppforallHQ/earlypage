@@ -1,4 +1,6 @@
-PROJECT = {
+var fixtures = []
+
+fixtures["PROJECT"] = {
   name: "اپفورال",
   user: "PROJECT",
   pass: "",
@@ -8,7 +10,7 @@ PROJECT = {
   active: true
 }
 
-TRIFORK = {
+fixtures["TRIFORK"] = {
   name: "ترایفورک",
   user: "trifork",
   pass: "t",
@@ -16,6 +18,18 @@ TRIFORK = {
   url_landing: "http://localhost:8069/static/landing-ajax.html",
   url_welcome: null,
   active: true
+}
+
+fixtures["PROJECT3"] = {
+  name: "سیرکل",
+  user: "PROJECT3",
+  pass: "PROJECT3",
+  host: "PROJECT3.127.0.0.1.xip.io:3069",
+  jsonp: true,
+  url_landing: "http://localhost:8069/static/landing-jsonp.html",
+  url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
+  active: true,
+  refid_param: "ref_id"
 }
 
 var mongoose = require("mongoose")
@@ -55,29 +69,13 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
 })
 
 User.remove({}, function(err) {
-  User.create(TRIFORK)
-  User.create(PROJECT, function(err, obj) {
-    EarlyAdopter.remove({}, function(err) {
-      JOHN_DOE = {
-        referrer: null,
-        email: "foo@example.com",
-        created_at: Date.now(),
-        user: obj._id,
-      }
-
-      EarlyAdopter.create(JOHN_DOE, function() {
-        EarlyAdopter.find(function(err, objs) {
-          console.log(objs)
-        })
-      })
+  for (var fixture in fixtures) {
+    fixture = fixtures[fixture]
+    User.create(fixture, function(err, obj) {
+      console.log(obj)
     })
-
-    User.find(function(err, objs) {
-      console.log(objs)
-    })
-  })
+  }
 })
-
 
 var express = require("express"),
     app = express(),
