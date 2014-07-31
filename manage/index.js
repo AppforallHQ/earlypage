@@ -37,7 +37,7 @@ var User = mongoose.model('User', {
 var ShortID = require('mongoose-shortid')
 
 var EarlyAdopter = mongoose.model('EarlyAdopter', {
-  referer: {
+  referrer: {
     type: ShortID, ref: 'EarlyAdopter'
   },
   email: String,
@@ -59,7 +59,7 @@ User.remove({}, function(err) {
   User.create(PROJECT, function(err, obj) {
     EarlyAdopter.remove({}, function(err) {
       JOHN_DOE = {
-        referer: null,
+        referrer: null,
         email: "foo@example.com",
         created_at: Date.now(),
         user: obj._id,
@@ -107,9 +107,9 @@ app.use(function(req, res, next) {
 })
 
 app.use(function(req, res, next) {
-  EarlyAdopter.findOne({_id: req.cookies.referer}, function(err, obj) {
+  EarlyAdopter.findOne({_id: req.cookies.referrer}, function(err, obj) {
     if(!obj) {
-      res.clearCookie("referer")
+      res.clearCookie("referrer")
     }
     next()
   })
@@ -151,7 +151,7 @@ var get_welcome_page_context = function(req, res, callback) {
 
 app.post("/", function(req, res) {
   var adopter_obj = {
-    referer: req.cookies.referer,
+    referrer: req.body.referrer || req.cookies.referrer,
     email: req.body.email,
     created_at: Date.now(),
     user: req.ep_user._id,
@@ -209,7 +209,7 @@ app.get("/r/:short_id", function(req, res) {
 
   EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
     if(!adopter) {
-      res.status(400).send("ERROR: Invalid referer ID")
+      res.status(400).send("ERROR: Invalid referrer ID")
     } else if(req.ep_user.url_welcome != null && short_id == req.cookies.current_adopter_id) {
       request(req.ep_user.url_welcome, function(_w_err, _w_resp, _w_body) {
         if (_w_err) {
@@ -221,7 +221,7 @@ app.get("/r/:short_id", function(req, res) {
         }
       })
     } else {
-      res.cookie('referer', adopter._id)
+      res.cookie('referrer', adopter._id)
       res.redirect('/')
     }
   })
