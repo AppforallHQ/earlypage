@@ -28,7 +28,7 @@ fixtures["PROJECT3"] = {
   jsonp: true,
   url_landing: "http://localhost:8069/static/landing-jsonp.html",
   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
-  url_social_redirect: "http://cirql.nl/success.html?invite_id=%s&token=%s",
+  url_social_redirect: "http://cirql.nl/success.html?invite_code=%s&token=%s",
   active: true,
   refid_param: "ref_id",
   twitter_consumer_key: "",
