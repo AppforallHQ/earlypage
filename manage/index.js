@@ -28,6 +28,7 @@ fixtures["PROJECT3"] = {
   jsonp: true,
   url_landing: "http://localhost:8069/static/landing-jsonp.html",
   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
+  url_social_redirect: "http://localhost:8080/early_acess_success_page?ref_id=%s",
   active: true,
   refid_param: "ref_id",
   twitter_consumer_key: "",
@@ -79,36 +80,51 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
   }
 })
 
-User.remove({}, function(err) {
-  for (var fixture in fixtures) {
-    fixture = fixtures[fixture]
-    User.create(fixture, function(err, obj) {
-      console.log('created ' + obj.name)
-      //FIXME: we must create passport twitter strategies in another way
-      if(obj.twitter_consumer_key != null) {
-        console.log('creating passport twitter for ' + obj.name)
+for (var fixture in fixtures) {
+  fixture = fixtures[fixture];
 
-        passport.use('twitter-' + obj.name, new TwitterStrategy({
-            consumerKey: obj.twitter_consumer_key,
-            consumerSecret: obj.twitter_consumer_secret,
-            callbackURL: "http://" + obj.host + "/auth/twitter/callback"
-          },
-          function(token, tokenSecret, profile, done) {
-            console.log(profile)
-            done(null, profile)
-          }
-        ))
+  (function (fixture) {
+    User.findOne({name: fixture.name}, function(err, obj) {
+      var create_passport = function(obj) {
+        if(obj.twitter_consumer_key != null) {
+          console.log('creating passport twitter for ' + obj.name)
+
+          passport.use('twitter-' + obj.name, new TwitterStrategy({
+              consumerKey: obj.twitter_consumer_key,
+              consumerSecret: obj.twitter_consumer_secret,
+              callbackURL: "http://" + obj.host + "/auth/twitter/callback"
+            },
+            function(token, tokenSecret, profile, done) {
+              console.log(profile)
+              done(null, profile)
+            }
+          ))
+        }
+      }
+
+      if(!obj) {
+        console.log('inserting' + fixture.name)
+        User.create(fixture, function(err, obj) {
+          //FIXME: we must create passport twitter strategies in another way
+          create_passport(fixture)
+        })
+      } else {
+        console.log('updating ' + obj.name)
+        User.update(obj, fixture)
+        //FIXME: we must create passport twitter strategies in another way
+        create_passport(fixture)
       }
     })
-  }
-})
+  })(fixture)
+}
 
 var express = require("express"),
     app = express(),
     passport = require("passport"),
     BasicStrategy = require('passport-http').BasicStrategy,
     TwitterStrategy = require('passport-twitter').Strategy,
-    url = require("url")
+    url = require("url"),
+    util = require("util")
 
 app.use(require('express-session')({secret: 'flying omnibus'}))
 app.use(passport.initialize())
@@ -263,7 +279,7 @@ app.get("/signup", function(req, res) {
 app.get('/twitter-success', function(req, res) {
   if(req.user) {
     sign_up({type: "twitter", value: req.user}, req, res, function(context) {
-      res.json(context)
+      res.redirect(util.format(req.ep_user.url_social_redirect, context.invite_code))
     })
   } else {
     res.redirect('/twitter-failure')
