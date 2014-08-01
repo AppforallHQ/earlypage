@@ -95,7 +95,6 @@ for (var fixture in fixtures) {
               callbackURL: "http://" + obj.host + "/auth/twitter/callback"
             },
             function(token, tokenSecret, profile, done) {
-              console.log(profile)
               done(null, profile)
             }
           ))
@@ -229,7 +228,7 @@ var sign_up = function(registration_data, req, res, callback) {
 
   } else if(registration_data.type == "twitter") {
     adopter_obj.twitter = registration_data.value
-    adopter_obj.query = registration_data.value
+    adopter_query.twitter = registration_data.value
   }
 
   var return_obj_context =  function(obj) {
@@ -280,6 +279,7 @@ app.get('/twitter-success', function(req, res) {
   if(req.user) {
     sign_up({type: "twitter", value: req.user}, req, res, function(context) {
       res.redirect(util.format(req.ep_user.url_social_redirect, context.invite_code))
+      // res.json(context)
     })
   } else {
     res.redirect('/twitter-failure')
