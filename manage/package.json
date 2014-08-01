@@ -18,6 +18,8 @@
     "request": "~2.39.0",
     "body-parser": "~1.5.2",
     "passport-http": "~0.2.2",
-    "validator": "~3.16.1"
+    "validator": "~3.16.1",
+    "passport-twitter": "~1.0.2",
+    "express-session": "~1.7.2"
   }
 }

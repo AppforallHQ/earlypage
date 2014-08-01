@@ -29,7 +29,10 @@ fixtures["PROJECT3"] = {
   url_landing: "http://localhost:8069/static/landing-jsonp.html",
   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
   active: true,
-  refid_param: "ref_id"
+  refid_param: "ref_id",
+  twitter_consumer_key: "",
+  twitter_consumer_secret: "",
+
 }
 
 var mongoose = require("mongoose")
@@ -46,6 +49,9 @@ var User = mongoose.model('User', {
   jsonp: Boolean,
   url_landing: String,
   url_welcome: String,
+  url_social_redirect: String,
+  twitter_consumer_key: String,
+  twitter_consumer_secret: String,
   refid_param: String,
   active: Boolean
 })
@@ -57,6 +63,9 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
     type: ShortID, ref: 'EarlyAdopter'
   },
   email: String,
+  twitter: String,
+  google: String,
+  facebook: String,
   created_at: Date,
   user: {
     type: mongoose.Schema.Types.ObjectId, ref: 'User'
@@ -74,7 +83,22 @@ User.remove({}, function(err) {
   for (var fixture in fixtures) {
     fixture = fixtures[fixture]
     User.create(fixture, function(err, obj) {
-      console.log(obj)
+      console.log('created ' + obj.name)
+      //FIXME: we must create passport twitter strategies in another way
+      if(obj.twitter_consumer_key != null) {
+        console.log('creating passport twitter for ' + obj.name)
+
+        passport.use('twitter-' + obj.name, new TwitterStrategy({
+            consumerKey: obj.twitter_consumer_key,
+            consumerSecret: obj.twitter_consumer_secret,
+            callbackURL: "http://" + obj.host + "/auth/twitter/callback"
+          },
+          function(token, tokenSecret, profile, done) {
+            console.log(profile)
+            done(null, profile)
+          }
+        ))
+      }
     })
   }
 })
@@ -83,11 +107,16 @@ var express = require("express"),
     app = express(),
     passport = require("passport"),
     BasicStrategy = require('passport-http').BasicStrategy,
+    TwitterStrategy = require('passport-twitter').Strategy,
     url = require("url")
 
-app.use(passport.initialize());
+app.use(require('express-session')({secret: 'flying omnibus'}))
+app.use(passport.initialize())
+app.use(passport.session())
 app.use(require("cookie-parser")("super-secret-string"))
-app.use(require("body-parser")());
+app.use(require("body-parser")())
+
+
 
 //TODO: Add nice stylish 500 errors
 //      Return proper status codes
@@ -245,6 +274,31 @@ passport.use(new BasicStrategy(
     });
   }
 ));
+
+passport.serializeUser(function(user, done) {
+  // console.log(user)
+  done(null, user.username)
+})
+
+passport.deserializeUser(function(id, done) {
+  done(null, id)
+});
+
+app.get("/auth/twitter", function(req, res, next) {
+  passport.authenticate('twitter-'+req.ep_user.name)(req, res, next)
+})
+
+app.get('/auth/twitter/callback', function(req, res, next) {
+  passport.authenticate('twitter-' + req.ep_user.name, {
+    successRedirect: '/twitter-success',
+    failureRedirect: '/twitter-failure'
+  })(req, res, next)
+})
+
+app.get('/twitter-success', function(req, res) {
+  console.log(req.user)
+  res.send(req.user)
+})
 
 app.get("/list.json",
   passport.authenticate("basic", {session: false}),
