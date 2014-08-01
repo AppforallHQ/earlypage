@@ -185,6 +185,37 @@ app.get("/", function(req, res) {
   return render_landing_page(req, res, context)
 })
 
+var context_from_adopter_obj = function(req, obj, callback) {
+  var context = {
+    "name": req.ep_user.name,
+    "form_action": "/signup",
+  }
+
+  var share_url = '/r/' + obj._id
+
+    //ZOMG THIS IS DIRTY
+  context["share_url"] = req.protocol + '://' + req.get('host') + share_url
+  context["invite_code"] = obj._id
+
+  get_queue_length(req, function(count) {
+    context["queue_length"] = count
+    return callback(context)
+  })
+}
+
+app.get("/query", function(req, res) {
+  EarlyAdopter.findOne({token: req.query.token, _id: req.query.invite_code}, function(err, obj) {
+    if(obj) {
+      console.log(obj)
+      context_from_adopter_obj(req, obj, function(context) {
+        res.jsonp(context)
+      })
+    } else {
+      return res.jsonp({'error': 'no-such-user'})
+    }
+  })
+})
+
 var validator = require('validator')
 var get_referrer_from_url = function(req) {
   if (req.headers.referer) {
@@ -194,7 +225,7 @@ var get_referrer_from_url = function(req) {
   }
 }
 
-var get_queue_length = function(req, res, callback) {
+var get_queue_length = function(req, callback) {
   EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
     callback(count)
   })
@@ -202,10 +233,7 @@ var get_queue_length = function(req, res, callback) {
 
 var sign_up = function(registration_data, req, res, callback) {
 
-  var context = {
-    "name": req.ep_user.name,
-    "form_action": "/signup",
-  }
+  var context = {}
 
   var referrer_from_url = get_referrer_from_url(req);
 
@@ -234,27 +262,14 @@ var sign_up = function(registration_data, req, res, callback) {
     adopter_query.twitter = registration_data.value
   }
 
-  var return_obj_context =  function(obj) {
-    res.cookie('current_adopter_id', obj._id)
-    var share_url = '/r/' + obj._id
-
-      //ZOMG THIS IS DIRTY
-    context["share_url"] = req.protocol + '://' + req.get('host') + share_url
-    context["invite_code"] = obj._id
-    get_queue_length(req, res, function(count) {
-      context["queue_length"] = count
-      return callback(context)
-    })
-  }
-
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
     if(!obj) {
       EarlyAdopter.create(adopter_obj, function(err, obj) {
-        return return_obj_context(obj)
+        context_from_adopter_obj(req, obj, callback)
       })
     } else {
       context["error"] = "already-registered"
-      return return_obj_context(obj)
+      context_from_adopter_obj(req, obj, callback)
     }
   })
 }
@@ -281,8 +296,10 @@ app.get("/signup", function(req, res) {
 app.get('/twitter-success', function(req, res) {
   if(req.user) {
     sign_up({type: "twitter", value: req.user}, req, res, function(context) {
-      res.redirect(util.format(req.ep_user.url_social_redirect, context.invite_code))
-      // res.json(context)
+      EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
+        var path = util.format(req.ep_user.url_social_redirect, context.invite_code, obj.token)
+        res.redirect(path)
+      })
     })
   } else {
     res.redirect('/twitter-failure')
