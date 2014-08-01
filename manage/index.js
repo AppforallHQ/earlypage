@@ -168,6 +168,13 @@ app.get("/", function(req, res) {
 })
 
 var validator = require('validator')
+var get_referrer_from_url = function(req) {
+  if (req.headers.referer) {
+    return url.parse(req.headers.referer, true).query[req.ep_user.refid_param]
+  } else {
+    return null
+  }
+}
 
 var get_queue_length = function(req, res, callback) {
   EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
@@ -182,28 +189,33 @@ var sign_up = function(registration_data, req, res, callback) {
     "form_action": "/signup",
   }
 
-  var referrer_from_url;
-
-  if (req.headers.referer) {
-    referrer_from_url = url.parse(req.headers.referer, true).query[req.ep_user.refid_param]
-  }
+  var referrer_from_url = get_referrer_from_url(req);
 
   var adopter_obj = {
-    referrer: referrer_from_url || req.cookies.referrer,
+    referrer: req.cookies.referrer || referrer_from_url,
     // registration_data: registration_data,
-    email: req.query.email,
     created_at: Date.now(),
     user: req.ep_user._id,
   }
 
-  if (!validator.isEmail(adopter_obj.email)) {
-    //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
-    context["error"] = "invalid-email"
+  var adopter_query =  {user: adopter_obj.user}
 
-    return callback(context)
+  if (registration_data.type == "email") {
+    adopter_obj.email = registration_data.value
+    adopter_query.email = registration_data.value
+
+    if (!validator.isEmail(adopter_obj.email)) {
+      //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
+      context["error"] = "invalid-email"
+
+      return callback(context)
+    }
+
+  } else if(registration_data.type == "twitter") {
+    adopter_obj.twitter = registration_data.value
+    adopter_obj.query = registration_data.value
   }
 
-  var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
 
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
     console.log("create")
@@ -230,7 +242,7 @@ var sign_up = function(registration_data, req, res, callback) {
 
 app.get("/signup", function(req, res) {
   //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
-  sign_up("foo@example.com", req, res, function(context) {
+  sign_up({type: "email", value: req.query.email}, req, res, function(context) {
     if(context["error"] != null) {
       if (req.ep_user.jsonp === true) {
         return res.jsonp(context)
@@ -246,6 +258,36 @@ app.get("/signup", function(req, res) {
     }
   })
 })
+
+app.get('/twitter-success', function(req, res) {
+  sign_up({type: "twitter", value: req.user}, req, res, function(context) {
+    res.json(context)
+  })
+})
+
+
+passport.serializeUser(function(user, done) {
+  done(null, user.username)
+})
+
+passport.deserializeUser(function(id, done) {
+  done(null, id)
+});
+
+app.get("/auth/twitter", function(req, res, next) {
+  var referrer = get_referrer_from_url(req)
+  res.cookie('referrer', referrer)
+  passport.authenticate('twitter-'+req.ep_user.name)(req, res, next)
+})
+
+app.get('/auth/twitter/callback', function(req, res, next) {
+  passport.authenticate('twitter-' + req.ep_user.name, {
+    successRedirect: '/twitter-success',
+    failureRedirect: '/twitter-failure'
+  })(req, res, next)
+})
+
+
 
 app.get("/r/:short_id", function(req, res) {
   var short_id = req.param("short_id")
@@ -280,31 +322,6 @@ passport.use(new BasicStrategy(
     });
   }
 ));
-
-passport.serializeUser(function(user, done) {
-  // console.log(user)
-  done(null, user.username)
-})
-
-passport.deserializeUser(function(id, done) {
-  done(null, id)
-});
-
-app.get("/auth/twitter", function(req, res, next) {
-  passport.authenticate('twitter-'+req.ep_user.name)(req, res, next)
-})
-
-app.get('/auth/twitter/callback', function(req, res, next) {
-  passport.authenticate('twitter-' + req.ep_user.name, {
-    successRedirect: '/twitter-success',
-    failureRedirect: '/twitter-failure'
-  })(req, res, next)
-})
-
-app.get('/twitter-success', function(req, res) {
-  console.log(req.user)
-  res.send(req.user)
-})
 
 app.get("/list.json",
   passport.authenticate("basic", {session: false}),
