@@ -216,26 +216,27 @@ var sign_up = function(registration_data, req, res, callback) {
     adopter_obj.query = registration_data.value
   }
 
+  var return_obj_context =  function(obj) {
+    res.cookie('current_adopter_id', obj._id)
+    var share_url = '/r/' + obj._id
+
+      //ZOMG THIS IS DIRTY
+    context["share_url"] = req.protocol + '://' + req.get('host') + share_url
+    context["invite_code"] = obj._id
+    get_queue_length(req, res, function(count) {
+      context["queue_length"] = count
+      return callback(context)
+    })
+  }
 
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
-    console.log("create")
     if(!obj) {
-      console.log("create")
       EarlyAdopter.create(adopter_obj, function(err, obj) {
-        res.cookie('current_adopter_id', obj._id)
-        var share_url = '/r/' + obj._id
-
-          //ZOMG THIS IS DIRTY
-        context["share_url"] = req.protocol + '://' + req.get('host') + share_url
-        context["invite_code"] = obj._id
-        get_queue_length(req, res, function(count) {
-          context["queue_length"] = count
-          return callback(context)
-        })
+        return return_obj_context(obj)
       })
     } else {
       context["error"] = "already-registered"
-      return callback(context)
+      return return_obj_context(obj)
     }
   })
 }
@@ -260,9 +261,13 @@ app.get("/signup", function(req, res) {
 })
 
 app.get('/twitter-success', function(req, res) {
-  sign_up({type: "twitter", value: req.user}, req, res, function(context) {
-    res.json(context)
-  })
+  if(req.user) {
+    sign_up({type: "twitter", value: req.user}, req, res, function(context) {
+      res.json(context)
+    })
+  } else {
+    res.redirect('/twitter-failure')
+  }
 })
 
 
