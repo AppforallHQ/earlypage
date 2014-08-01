@@ -28,7 +28,7 @@ fixtures["PROJECT3"] = {
   jsonp: true,
   url_landing: "http://localhost:8069/static/landing-jsonp.html",
   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
-  url_social_redirect: "http://localhost:8080/early_acess_success_page?ref_id=%s",
+  url_social_redirect: "http://cirql.nl/success.html?invite_id=%s&token=%s",
   active: true,
   refid_param: "ref_id",
   twitter_consumer_key: "",
@@ -57,11 +57,11 @@ var User = mongoose.model('User', {
   active: Boolean
 })
 
-var ShortID = require('mongoose-shortid')
+var shortId = require('shortid');
 
 var EarlyAdopter = mongoose.model('EarlyAdopter', {
   referrer: {
-    type: ShortID, ref: 'EarlyAdopter'
+    type: String, ref: 'EarlyAdopter'
   },
   email: String,
   twitter: String,
@@ -72,11 +72,14 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
     type: mongoose.Schema.Types.ObjectId, ref: 'User'
   },
   _id: {
-    type: ShortID,
-    len: 6,
-    base: 16,
-    alphabet: undefined,
-    retries: 10
+    type: String,
+    unique: true,
+    'default': shortId.generate
+  },
+  token: {
+    type: String,
+    unique: true,
+    'default': shortId.generate
   }
 })
 
