@@ -169,73 +169,79 @@ app.get("/", function(req, res) {
 
 var validator = require('validator')
 
-var get_welcome_page_context = function(req, res, callback) {
+var get_queue_length = function(req, res, callback) {
   EarlyAdopter.count({user: req.ep_user._id}, function(err, count) {
-    var context = {
-      "queue_length": count,
-      "share_url": (req.protocol + '://' + req.get('host') + req.originalUrl)
-    }
-    callback(context)
+    callback(count)
   })
 }
 
-app.get("/signup", function(req, res) {
-  var referrer_from_url
-  if (req.headers.referer) {
-    referrer_from_url = url.parse(req.headers.referer, true).query[req.ep_user.refid_param]
-  }
-  var adopter_obj = {
-    referrer: referrer_from_url || req.cookies.referrer,
-    email: req.query.email,
-    created_at: Date.now(),
-    user: req.ep_user._id,
-  }
+var sign_up = function(registration_data, req, res, callback) {
 
-  var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
-
-  //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
   var context = {
     "name": req.ep_user.name,
     "form_action": "/signup",
   }
 
-  console.log(adopter_obj)
+  var referrer_from_url;
+
+  if (req.headers.referer) {
+    referrer_from_url = url.parse(req.headers.referer, true).query[req.ep_user.refid_param]
+  }
+
+  var adopter_obj = {
+    referrer: referrer_from_url || req.cookies.referrer,
+    // registration_data: registration_data,
+    email: req.query.email,
+    created_at: Date.now(),
+    user: req.ep_user._id,
+  }
+
   if (!validator.isEmail(adopter_obj.email)) {
     //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
     context["error"] = "invalid-email"
 
-    if (req.ep_user.jsonp === true) {
-      return res.jsonp(context)
-    } else {
-      return render_landing_page(req, res, context)
-    }
+    return callback(context)
   }
 
+  var adopter_query =  {user: adopter_obj.user, email: adopter_obj.email}
+
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
+    console.log("create")
     if(!obj) {
+      console.log("create")
       EarlyAdopter.create(adopter_obj, function(err, obj) {
         res.cookie('current_adopter_id', obj._id)
         var share_url = '/r/' + obj._id
 
-        console.log(req.ep_user)
-        if (req.ep_user.jsonp === true) {
-          get_welcome_page_context(req, res, function(context) {
-            //ZOMG THIS IS DIRTY
-            context["share_url"] = req.protocol + '://' + req.get('host') + share_url
-            context["invite_code"] = obj._id
-            res.jsonp(context)
-          })
-        } else {
-          res.redirect(share_url)
-        }
+          //ZOMG THIS IS DIRTY
+        context["share_url"] = req.protocol + '://' + req.get('host') + share_url
+        context["invite_code"] = obj._id
+        get_queue_length(req, res, function(count) {
+          context["queue_length"] = count
+          return callback(context)
+        })
       })
     } else {
       context["error"] = "already-registered"
+      return callback(context)
+    }
+  })
+}
 
+app.get("/signup", function(req, res) {
+  //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
+  sign_up("foo@example.com", req, res, function(context) {
+    if(context["error"] != null) {
       if (req.ep_user.jsonp === true) {
         return res.jsonp(context)
       } else {
         return render_landing_page(req, res, context)
+      }
+    } else {
+      if (req.ep_user.jsonp === true) {
+        res.jsonp(context)
+      } else {
+        res.redirect(share_url)
       }
     }
   })
