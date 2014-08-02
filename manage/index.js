@@ -34,6 +34,8 @@ fixtures["PROJECT3"] = {
   twitter_consumer_key: "",
   twitter_consumer_secret: "",
 
+  google_client_id: "",
+  google_client_secret: ""
 }
 
 var mongoose = require("mongoose")
@@ -53,6 +55,8 @@ var User = mongoose.model('User', {
   url_social_redirect: String,
   twitter_consumer_key: String,
   twitter_consumer_secret: String,
+  google_client_id: String,
+  google_client_secret: String,
   refid_param: String,
   active: Boolean
 })
@@ -102,6 +106,21 @@ for (var fixture in fixtures) {
             }
           ))
         }
+
+        if(obj.google_client_id != null) {
+          console.log('creating passport google for ' + obj.name)
+
+          passport.use('google-' + obj.name, new GoogleStrategy({
+              clientID: obj.google_client_id,
+              clientSecret: obj.google_client_secret,
+              callbackURL: "http://" + obj.host + "/auth/google/callback"
+            },
+            function(token, tokenSecret, profile, done) {
+              done(null, profile)
+            }
+          ))
+        }
+
       }
 
       if(!obj) {
@@ -125,6 +144,7 @@ var express = require("express"),
     passport = require("passport"),
     BasicStrategy = require('passport-http').BasicStrategy,
     TwitterStrategy = require('passport-twitter').Strategy,
+    GoogleStrategy = require('passport-google-oauth').OAuth2Strategy,
     url = require("url"),
     util = require("util")
 
@@ -260,6 +280,9 @@ var sign_up = function(registration_data, req, res, callback) {
   } else if(registration_data.type == "twitter") {
     adopter_obj.twitter = registration_data.value
     adopter_query.twitter = registration_data.value
+  } else if(registration_data.type == "google") {
+    adopter_obj.google = registration_data.value
+    adopter_query.google = registration_data.value
   }
 
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
@@ -306,9 +329,26 @@ app.get('/twitter-success', function(req, res) {
   }
 })
 
+app.get('/google-success', function(req, res) {
+  if(req.user) {
+    sign_up({type: "google", value: req.user}, req, res, function(context) {
+      EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
+        var path = util.format(req.ep_user.url_social_redirect, context.invite_code, obj.token)
+        res.redirect(path)
+      })
+    })
+  } else {
+    res.redirect('/google-failure')
+  }
+})
+
 
 passport.serializeUser(function(user, done) {
-  done(null, user.username)
+  if(user.provider == "google") {
+    done(null, user._json.email)
+  } else {
+    done(null, user.username)
+  }
 })
 
 passport.deserializeUser(function(id, done) {
@@ -321,6 +361,14 @@ app.get("/auth/twitter", function(req, res, next) {
   passport.authenticate('twitter-'+req.ep_user.name)(req, res, next)
 })
 
+app.get("/auth/google", function(req, res, next) {
+  var referrer = get_referrer_from_url(req)
+  res.cookie('referrer', referrer)
+  passport.authenticate('google-'+req.ep_user.name,
+    {scope: 'https://www.google.com/m8/feeds https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'}
+  )(req, res, next)
+})
+
 app.get('/auth/twitter/callback', function(req, res, next) {
   passport.authenticate('twitter-' + req.ep_user.name, {
     successRedirect: '/twitter-success',
@@ -328,6 +376,12 @@ app.get('/auth/twitter/callback', function(req, res, next) {
   })(req, res, next)
 })
 
+app.get('/auth/google/callback', function(req, res, next) {
+  passport.authenticate('google-' + req.ep_user.name, {
+    successRedirect: '/google-success',
+    failureRedirect: '/google-failure'
+  })(req, res, next)
+})
 
 
 app.get("/r/:short_id", function(req, res) {
