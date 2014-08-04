@@ -35,7 +35,10 @@ fixtures["PROJECT3"] = {
   twitter_consumer_secret: "",
 
   google_client_id: "",
-  google_client_secret: ""
+  google_client_secret: "",
+
+  facebook_app_id: "",
+  facebook_app_secret: ""
 }
 
 var mongoose = require("mongoose")
@@ -57,6 +60,8 @@ var User = mongoose.model('User', {
   twitter_consumer_secret: String,
   google_client_id: String,
   google_client_secret: String,
+  facebook_app_id: String,
+  facebook_app_secret: String,
   refid_param: String,
   active: Boolean
 })
@@ -69,8 +74,8 @@ var EarlyAdopter = mongoose.model('EarlyAdopter', {
   },
   email: String,
   twitter: String,
+  facebook: mongoose.Schema.Types.Mixed,
   google: String,
-  facebook: String,
   created_at: Date,
   user: {
     type: mongoose.Schema.Types.ObjectId, ref: 'User'
@@ -121,6 +126,20 @@ for (var fixture in fixtures) {
           ))
         }
 
+        if(obj.facebook_app_id != null) {
+          console.log('creating passport facebook for ' + obj.name)
+
+          passport.use('facebook-' + obj.name, new FacebookStrategy({
+              clientID: obj.facebook_app_id,
+              clientSecret: obj.facebook_app_secret,
+              callbackURL: "http://" + obj.host + "/auth/facebook/callback"
+            },
+            function(token, tokenSecret, profile, done) {
+              done(null, profile)
+            }
+          ))
+        }
+
       }
 
       if(!obj) {
@@ -144,6 +163,7 @@ var express = require("express"),
     passport = require("passport"),
     BasicStrategy = require('passport-http').BasicStrategy,
     TwitterStrategy = require('passport-twitter').Strategy,
+    FacebookStrategy = require('passport-facebook').Strategy,
     GoogleStrategy = require('passport-google-oauth').OAuth2Strategy,
     url = require("url"),
     util = require("util")
@@ -227,7 +247,6 @@ var context_from_adopter_obj = function(req, obj, callback, error) {
 app.get("/query", function(req, res) {
   EarlyAdopter.findOne({token: req.query.token, _id: req.query.invite_code}, function(err, obj) {
     if(obj) {
-      console.log(obj)
       context_from_adopter_obj(req, obj, function(context) {
         res.jsonp(context)
       })
@@ -284,6 +303,9 @@ var sign_up = function(registration_data, req, res, callback) {
   } else if(registration_data.type == "google") {
     adopter_obj.google = registration_data.value
     adopter_query.google = registration_data.value
+  } else if(registration_data.type == "facebook") {
+    adopter_obj.facebook = registration_data.value
+    adopter_query.facebook = registration_data.value
   }
 
   EarlyAdopter.findOne(adopter_query, function(err, obj) {
@@ -342,8 +364,32 @@ app.get('/google-success', function(req, res) {
   }
 })
 
+app.get('/facebook-success', function(req, res) {
+  if(req.user) {
+    sign_up({type: "facebook", value: req.user}, req, res, function(context) {
+      EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
+        var path = util.format(req.ep_user.url_social_redirect, context.invite_code, obj.token)
+        res.redirect(path)
+      })
+    })
+  } else {
+    res.redirect('/facebook-failure')
+  }
+})
+
 
 passport.serializeUser(function(user, done) {
+  if(user.provider == "facebook") {
+    var info = {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      name: user.name,
+      profileUrl: user.profileUrl
+    }
+
+    done(null, info)
+  }
   if(user.provider == "google") {
     done(null, user._json.email)
   } else {
@@ -369,6 +415,13 @@ app.get("/auth/google", function(req, res, next) {
   )(req, res, next)
 })
 
+app.get("/auth/facebook", function(req, res, next) {
+  var referrer = get_referrer_from_url(req)
+  res.cookie('referrer', referrer)
+  passport.authenticate('facebook-'+req.ep_user.name
+  )(req, res, next)
+})
+
 app.get('/auth/twitter/callback', function(req, res, next) {
   passport.authenticate('twitter-' + req.ep_user.name, {
     successRedirect: '/twitter-success',
@@ -380,6 +433,13 @@ app.get('/auth/google/callback', function(req, res, next) {
   passport.authenticate('google-' + req.ep_user.name, {
     successRedirect: '/google-success',
     failureRedirect: '/google-failure'
+  })(req, res, next)
+})
+
+app.get('/auth/facebook/callback', function(req, res, next) {
+  passport.authenticate('facebook-' + req.ep_user.name, {
+    successRedirect: '/facebook-success',
+    failureRedirect: '/facebook-failure'
   })(req, res, next)
 })
 
