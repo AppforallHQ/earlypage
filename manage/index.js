@@ -28,7 +28,7 @@ fixtures["PROJECT3"] = {
   jsonp: true,
   url_landing: "http://localhost:8069/static/landing-jsonp.html",
   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
-  url_social_redirect: "http://cirql.nl/success.html?invite_code=%s&token=%s",
+  url_social_redirect: "http://localhost:8080/?success=true&invite_code=%s&token=%s",
   active: true,
   refid_param: "ref_id",
   twitter_consumer_key: "",
@@ -131,9 +131,9 @@ for (var fixture in fixtures) {
         })
       } else {
         console.log('updating ' + obj.name)
-        User.update(obj, fixture)
-        //FIXME: we must create passport twitter strategies in another way
-        create_passport(fixture)
+        User.update(obj, fixture, function(err, obj) {
+          create_passport(fixture)
+        })
       }
     })
   })(fixture)
@@ -205,10 +205,11 @@ app.get("/", function(req, res) {
   return render_landing_page(req, res, context)
 })
 
-var context_from_adopter_obj = function(req, obj, callback) {
+var context_from_adopter_obj = function(req, obj, callback, error) {
   var context = {
     "name": req.ep_user.name,
     "form_action": "/signup",
+    "error": error
   }
 
   var share_url = '/r/' + obj._id
@@ -291,8 +292,7 @@ var sign_up = function(registration_data, req, res, callback) {
         context_from_adopter_obj(req, obj, callback)
       })
     } else {
-      context["error"] = "already-registered"
-      context_from_adopter_obj(req, obj, callback)
+      context_from_adopter_obj(req, obj, callback, "already-registered")
     }
   })
 }
