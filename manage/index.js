@@ -216,26 +216,35 @@ var render_landing_page = function (req, res, context) {
   })
 }
 
-app.get("/", function(req, res) {
-  //TODO: MIGHT NEED REFACTOR, ALONG WITH THE PART OF CODE LABLED WITH XXXXXX
+var get_base_context_based_on_req = function(req) {
   var context = {
     "name": req.ep_user.name,
-    "form_action": "/signup"
+    "form_action": build_full_url(req, "/signup")
   }
+
+  return context
+}
+
+var build_full_url = function(req, path) {
+  return (req.protocol + '://' + req.get('host') + path)
+}
+
+app.get("/", function(req, res) {
+  //TODO: MIGHT NEED REFACTOR, ALONG WITH THE PART OF CODE LABLED WITH XXXXXX
+  var context = get_base_context_based_on_req(req)
   return render_landing_page(req, res, context)
 })
 
 var context_from_adopter_obj = function(req, obj, callback, error) {
-  var context = {
-    "name": req.ep_user.name,
-    "form_action": "/signup",
-    "error": error
-  }
+
+  var context = get_base_context_based_on_req(req)
+  context.error = error
 
   var share_url = '/r/' + obj._id
 
     //ZOMG THIS IS DIRTY
-  context["share_url"] = req.protocol + '://' + req.get('host') + share_url
+  context["share_url"] = build_full_url(req, share_url)
+  context["encoded_share_url"] = encodeURIComponent(context["share_url"])
   context["invite_code"] = obj._id
 
   get_queue_length(req, function(count) {
@@ -319,21 +328,24 @@ var sign_up = function(registration_data, req, res, callback) {
   })
 }
 
+app.post("/signup", function(req, res) {
+  sign_up({type: "email", value: req.body.email}, req, res, function(context) {
+    if(context["error"] != null) {
+      return render_landing_page(req, res, context)
+    } else {
+      res.cookie('current_adopter_id', context.invite_code)
+      res.redirect(context.share_url)
+    }
+  })
+})
+
 app.get("/signup", function(req, res) {
   //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
   sign_up({type: "email", value: req.query.email}, req, res, function(context) {
     if(context["error"] != null) {
-      if (req.ep_user.jsonp === true) {
-        return res.jsonp(context)
-      } else {
-        return render_landing_page(req, res, context)
-      }
+      return res.jsonp(context)
     } else {
-      if (req.ep_user.jsonp === true) {
-        res.jsonp(context)
-      } else {
-        res.redirect(share_url)
-      }
+      res.jsonp(context)
     }
   })
 })
@@ -455,7 +467,7 @@ app.get("/r/:short_id", function(req, res) {
         if (_w_err) {
           res.status(500).send('ERROR: Cannot access welcome static page')
         } else {
-          get_welcome_page_context(req, res, function(context) {
+          context_from_adopter_obj(req, adopter, function(context) {
             res.send(Mustache.render(_w_body, context))
           })
         }
