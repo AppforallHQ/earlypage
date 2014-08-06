@@ -5,18 +5,8 @@ fixtures["PROJECT"] = {
   user: "PROJECT",
   pass: "",
   host: "PROJECT.127.0.0.1.xip.io:3069",
-  url_landing: "http://localhost:8069/static/landing.html",
-  url_welcome: "http://localhost:8069/static/welcome.html",
-  active: true
-}
-
-fixtures["TRIFORK"] = {
-  name: "ترایفورک",
-  user: "trifork",
-  pass: "t",
-  host: "trifork.127.0.0.1.xip.io:3069",
-  url_landing: "http://localhost:8069/static/landing-ajax.html",
-  url_welcome: null,
+  url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
+  url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
   active: true
 }
 
