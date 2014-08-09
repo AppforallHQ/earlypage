@@ -14,12 +14,13 @@ Setup and run puppet manifests
         git remote add digital-ocean root@earlypage.FQDN:/app/earlypage
 
         git deploy setup -r digital-ocean
-        git push digital-ocean master:master
+        git push digital-ocean production:master
 
 *   To apply puppet manifests, run
 
-        git push digital-ocean master:master -f
+        git push digital-ocean production:master -f
         ssh root@earlypage.FQDN "cd /app/earlypage/puppet; sudo puppet apply manifests/site.pp --modulepath=modules"
+        ssh root@earlypage.FQDN "service nginx restart"
 
 Deployment
 ==========
