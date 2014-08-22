@@ -1,7 +1,7 @@
 var fixtures = []
 
 fixtures["PROJECT"] = {
-  name: "اپفورال",
+  name: "PROJECT",
   user: "PROJECT",
   pass: "",
   host: "PROJECT.127.0.0.1.xip.io:3069",
@@ -11,7 +11,7 @@ fixtures["PROJECT"] = {
 }
 
 fixtures["PROJECT3"] = {
-  name: "سیرکل",
+  name: "PROJECT3",
   user: "PROJECT3",
   pass: "PROJECT3",
   host: "PROJECT3.127.0.0.1.xip.io:3069",
