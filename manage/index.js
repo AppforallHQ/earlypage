@@ -4,7 +4,7 @@ fixtures["PROJECT"] = {
   name: "PROJECT",
   user: "PROJECT",
   pass: "",
-  host: "PROJECT.127.0.0.1.xip.io:3069",
+  host: "PROJECT.127.0.0.1.xip.io:4000",
   url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
   url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
   active: true
@@ -277,7 +277,8 @@ var sign_up = function(registration_data, req, res, callback) {
   var referrer_from_url = get_referrer_from_url(req);
 
   var adopter_obj = {
-    referrer: req.cookies.referrer || referrer_from_url,
+    referrer: req.cookies.referrer || registration_data.referrer || referrer_from_url,
+    
     // registration_data: registration_data,
     created_at: Date.now(),
     user: req.ep_user._id,
@@ -497,6 +498,57 @@ app.get("/list.json",
     })
   }
 )
+
+
+app.get("/api/landing",
+  passport.authenticate("basic", {session: false}),
+  function(req, res) {
+    if (req.user && !req.ep_user._id.equals(req.user._id)) {
+      return res.status(403).send("ERROR: Invalid user")
+    }
+    var ret = {}
+    var short_id = req.param('referrer')
+    EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
+      if(adopter && (req.ep_user.url_welcome == null || short_id != req.param('current_adopter_id'))) {
+        ret.referrer = adopter._id;
+      }
+      EarlyAdopter.count({user: req.ep_user._id},function(err,c){
+        ret.query_length = c;
+        return res.end(JSON.stringify(ret))
+      });
+    });
+  }
+)
+
+
+
+app.get("/api/welcome",
+  passport.authenticate("basic", {session: false}),
+  function(req, res) {
+    if (req.user && !req.ep_user._id.equals(req.user._id)) {
+      return res.status(403).send("ERROR: Invalid user")
+    }
+    var short_id = req.param("referrer");
+    EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
+      var referrer = null;
+      if(adopter && (req.ep_user.url_welcome == null || short_id != req.param('current_adopter_id'))) {
+        referrer = adopter._id;
+      }
+      sign_up({type: "email", value: req.param('email'), referrer: referrer}, req, res, function(context) {
+        if (req.param("share_url") && context["error"]==null) {
+          context["share_url"] = req.param("share_url").replace("{{ref_id}}",context["invite_code"]);
+          context["encoded_share_url"] = encodeURIComponent(context["share_url"])
+        }
+        //To set cookie on client
+        context['current_adopter_id']=context.invite_code;
+        return res.jsonp(context)
+      })
+    });
+  }
+)
+
+
+
 
 var server = app.listen(process.env.PORT, function() {
   console.log('Listening on port %d', server.address().port);
