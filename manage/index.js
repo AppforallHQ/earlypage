@@ -4,20 +4,31 @@ fixtures["PROJECT"] = {
   name: "PROJECT",
   user: "PROJECT",
   pass: "",
-  host: "127.0.0.1:4000/PROJECT",
+  host: "PROJECT.127.0.0.1.xip.io:4000",
   url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
   url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
   active: true
 }
 
-fixtures["PROJECT2"] = {
-  name: "PROJECT2",
-  user: "PROJECT2",
-  pass: "",
-  host: "127.0.0.1:4000/PROJECT2",
-  url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
-  url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
-  active: true
+fixtures["PROJECT3"] = {
+  name: "PROJECT3",
+  user: "PROJECT3",
+  pass: "PROJECT3",
+  host: "PROJECT3.127.0.0.1.xip.io:3069",
+  jsonp: true,
+  url_landing: "http://localhost:8069/static/landing-jsonp.html",
+  url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
+  url_social_redirect: "http://localhost:8080/?success=true&invite_code=%s&token=%s",
+  active: true,
+  refid_param: "ref_id",
+  twitter_consumer_key: "",
+  twitter_consumer_secret: "",
+
+  google_client_id: "",
+  google_client_secret: "",
+
+  facebook_app_id: "",
+  facebook_app_secret: ""
 }
 
 var mongoose = require("mongoose")
@@ -122,7 +133,7 @@ for (var fixture in fixtures) {
       }
 
       if(!obj) {
-        console.log('inserting ' + fixture.name)
+        console.log('inserting' + fixture.name)
         User.create(fixture, function(err, obj) {
           //FIXME: we must create passport twitter strategies in another way
           create_passport(fixture)
@@ -139,7 +150,6 @@ for (var fixture in fixtures) {
 
 var express = require("express"),
     app = express(),
-    Router = express.Router(),
     passport = require("passport"),
     BasicStrategy = require('passport-http').BasicStrategy,
     TwitterStrategy = require('passport-twitter').Strategy,
@@ -153,16 +163,15 @@ app.use(passport.initialize())
 app.use(passport.session())
 app.use(require("cookie-parser")("super-secret-string"))
 app.use(require("body-parser")())
-app.use('/[A-Za-z0-9_]+', Router)
+
+
 
 //TODO: Add nice stylish 500 errors
 //      Return proper status codes
 
-Router.use(function(req, res, next) {
-    var user = req.originalUrl.substr(0, req.originalUrl.indexOf('/', 1));
-	  var host = req.headers.host + user;
-    User.findOne({host: host}, function(err, user) {
-      if (!user) {
+app.use(function(req, res, next) {
+  User.findOne({host: req.headers.host}, function(err, user) {
+    if (!user) {
       res.status(500).send("Host not configured")
     } else if (!user.active) {
       var msg = "You are accessing page for " +
@@ -175,7 +184,7 @@ Router.use(function(req, res, next) {
   })
 })
 
-Router.use(function(req, res, next) {
+app.use(function(req, res, next) {
   EarlyAdopter.findOne({_id: req.cookies.referrer}, function(err, obj) {
     if(!obj) {
       res.clearCookie("referrer")
@@ -210,7 +219,7 @@ var build_full_url = function(req, path) {
   return (req.protocol + '://' + req.get('host') + path)
 }
 
-Router.get("/", function(req, res) {
+app.get("/", function(req, res) {
   //TODO: MIGHT NEED REFACTOR, ALONG WITH THE PART OF CODE LABLED WITH XXXXXX
   var context = get_base_context_based_on_req(req)
   return render_landing_page(req, res, context)
@@ -234,7 +243,7 @@ var context_from_adopter_obj = function(req, obj, callback, error) {
   })
 }
 
-Router.get("/query", function(req, res) {
+app.get("/query", function(req, res) {
   EarlyAdopter.findOne({token: req.query.token, _id: req.query.invite_code}, function(err, obj) {
     if(obj) {
       context_from_adopter_obj(req, obj, function(context) {
@@ -310,7 +319,7 @@ var sign_up = function(registration_data, req, res, callback) {
   })
 }
 
-Router.post("/signup", function(req, res) {
+app.post("/signup", function(req, res) {
   sign_up({type: "email", value: req.body.email}, req, res, function(context) {
     if(context["error"] != null) {
       return render_landing_page(req, res, context)
@@ -321,7 +330,7 @@ Router.post("/signup", function(req, res) {
   })
 })
 
-Router.get("/signup", function(req, res) {
+app.get("/signup", function(req, res) {
   //TODO: MIGHT NEED REFACTOR SOMEHOW (XXXXXX)
   sign_up({type: "email", value: req.query.email}, req, res, function(context) {
     if(context["error"] != null) {
@@ -332,7 +341,7 @@ Router.get("/signup", function(req, res) {
   })
 })
 
-Router.get('/twitter-success', function(req, res) {
+app.get('/twitter-success', function(req, res) {
   if(req.user) {
     sign_up({type: "twitter", value: req.user}, req, res, function(context) {
       EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
@@ -345,7 +354,7 @@ Router.get('/twitter-success', function(req, res) {
   }
 })
 
-Router.get('/google-success', function(req, res) {
+app.get('/google-success', function(req, res) {
   if(req.user) {
     sign_up({type: "google", value: req.user}, req, res, function(context) {
       EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
@@ -358,7 +367,7 @@ Router.get('/google-success', function(req, res) {
   }
 })
 
-Router.get('/facebook-success', function(req, res) {
+app.get('/facebook-success', function(req, res) {
   if(req.user) {
     sign_up({type: "facebook", value: req.user}, req, res, function(context) {
       EarlyAdopter.findOne({_id: context.invite_code}, function(err, obj) {
@@ -395,13 +404,13 @@ passport.deserializeUser(function(id, done) {
   done(null, id)
 });
 
-Router.get("/auth/twitter", function(req, res, next) {
+app.get("/auth/twitter", function(req, res, next) {
   var referrer = get_referrer_from_url(req)
   res.cookie('referrer', referrer)
   passport.authenticate('twitter-'+req.ep_user.name)(req, res, next)
 })
 
-Router.get("/auth/google", function(req, res, next) {
+app.get("/auth/google", function(req, res, next) {
   var referrer = get_referrer_from_url(req)
   res.cookie('referrer', referrer)
   passport.authenticate('google-'+req.ep_user.name,
@@ -409,28 +418,28 @@ Router.get("/auth/google", function(req, res, next) {
   )(req, res, next)
 })
 
-Router.get("/auth/facebook", function(req, res, next) {
+app.get("/auth/facebook", function(req, res, next) {
   var referrer = get_referrer_from_url(req)
   res.cookie('referrer', referrer)
   passport.authenticate('facebook-'+req.ep_user.name
   )(req, res, next)
 })
 
-Router.get('/auth/twitter/callback', function(req, res, next) {
+app.get('/auth/twitter/callback', function(req, res, next) {
   passport.authenticate('twitter-' + req.ep_user.name, {
     successRedirect: '/twitter-success',
     failureRedirect: '/twitter-failure'
   })(req, res, next)
 })
 
-Router.get('/auth/google/callback', function(req, res, next) {
+app.get('/auth/google/callback', function(req, res, next) {
   passport.authenticate('google-' + req.ep_user.name, {
     successRedirect: '/google-success',
     failureRedirect: '/google-failure'
   })(req, res, next)
 })
 
-Router.get('/auth/facebook/callback', function(req, res, next) {
+app.get('/auth/facebook/callback', function(req, res, next) {
   passport.authenticate('facebook-' + req.ep_user.name, {
     successRedirect: '/facebook-success',
     failureRedirect: '/facebook-failure'
@@ -438,7 +447,7 @@ Router.get('/auth/facebook/callback', function(req, res, next) {
 })
 
 
-Router.get("/r/:short_id", function(req, res) {
+app.get("/r/:short_id", function(req, res) {
   var short_id = req.param("short_id")
 
   EarlyAdopter.findOne({user: req.ep_user._id, _id: short_id}, function(err, adopter) {
@@ -472,11 +481,10 @@ passport.use(new BasicStrategy(
   }
 ));
 
-Router.get("/list.json",
+app.get("/list.json",
   passport.authenticate("basic", {session: false}),
   function(req, res) {
     //DANGER ZONE
-      console.log('here')
     //MUST DO BETTER THAN THIS
     //MAYBE ANOTHER PASSPORT STRATEGY WHICH ALLOWS US TO CHECK FOR REUQUEST PARAMS
     //OR HANDLE IT IN A MIDDLEWARE
@@ -492,7 +500,7 @@ Router.get("/list.json",
 )
 
 
-Router.get("/*/api/landing",
+app.get("/api/landing",
   passport.authenticate("basic", {session: false}),
   function(req, res) {
     if (req.user && !req.ep_user._id.equals(req.user._id)) {
@@ -514,7 +522,7 @@ Router.get("/*/api/landing",
 
 
 
-Router.get("/*/api/welcome",
+app.get("/api/welcome",
   passport.authenticate("basic", {session: false}),
   function(req, res) {
     if (req.user && !req.ep_user._id.equals(req.user._id)) {
