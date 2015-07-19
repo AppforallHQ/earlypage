@@ -1,10 +1,20 @@
 var fixtures = []
 
 fixtures["PROJECT"] = {
-  name: "PROJECT",
-  user: "PROJECT",
+    name: "PROJECT",
+    user: "PROJECT",
+    pass: "",
+    host: "PROJECT.127.0.0.1.xip.io:4000",
+    url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
+    url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
+    active: true
+}
+
+fixtures["PROJECT2"] = {
+  name: "PROJECT2",
+  user: "PROJECT2",
   pass: "",
-  host: "PROJECT.127.0.0.1.xip.io:4000",
+  host: "PROJECT2.127.0.0.1.xip.io:4000",
   url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
   url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
   active: true
