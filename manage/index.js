@@ -1,45 +1,45 @@
-var fixtures = []
+var fixtures = [];
 
-fixtures["PROJECT"] = {
-    name: "PROJECT",
-    user: "PROJECT",
-    pass: "",
-    host: "PROJECT.127.0.0.1.xip.io:4000",
-    url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
-    url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
-    active: true
-}
+// fixtures["PROJECT"] = {
+//     name: "PROJECT",
+//     user: "PROJECT",
+//     pass: "",
+//     host: "PROJECT.127.0.0.1.xip.io:4000",
+//     url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
+//     url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
+//     active: true
+// }
 
-fixtures["PROJECT2"] = {
-  name: "PROJECT2",
-  user: "PROJECT2",
-  pass: "",
-  host: "PROJECT2.127.0.0.1.xip.io:4000",
-  url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
-  url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
-  active: true
-}
+// fixtures["PROJECT2"] = {
+//   name: "PROJECT2",
+//   user: "PROJECT2",
+//   pass: "",
+//   host: "PROJECT2.127.0.0.1.xip.io:4000",
+//   url_landing: "http://cdn.PROJECT.com/earlypage/index.html",
+//   url_welcome: "http://cdn.PROJECT.com/earlypage/single.html",
+//   active: true
+// }
 
-fixtures["PROJECT3"] = {
-  name: "PROJECT3",
-  user: "PROJECT3",
-  pass: "PROJECT3",
-  host: "PROJECT3.127.0.0.1.xip.io:3069",
-  jsonp: true,
-  url_landing: "http://localhost:8069/static/landing-jsonp.html",
-  url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
-  url_social_redirect: "http://localhost:8080/?success=true&invite_code=%s&token=%s",
-  active: true,
-  refid_param: "ref_id",
-  twitter_consumer_key: "",
-  twitter_consumer_secret: "",
+// fixtures["PROJECT3"] = {
+//   name: "PROJECT3",
+//   user: "PROJECT3",
+//   pass: "PROJECT3",
+//   host: "PROJECT3.127.0.0.1.xip.io:3069",
+//   jsonp: true,
+//   url_landing: "http://localhost:8069/static/landing-jsonp.html",
+//   url_welcome: "http://localhost:8069/static/welcome-jsonp.html",
+//   url_social_redirect: "http://localhost:8080/?success=true&invite_code=%s&token=%s",
+//   active: true,
+//   refid_param: "ref_id",
+//   twitter_consumer_key: "",
+//   twitter_consumer_secret: "",
 
-  google_client_id: "",
-  google_client_secret: "",
+//   google_client_id: "",
+//   google_client_secret: "",
 
-  facebook_app_id: "",
-  facebook_app_secret: ""
-}
+//   facebook_app_id: "",
+//   facebook_app_secret: ""
+// }
 
 var mongoose = require("mongoose")
 mongoose.connect("mongodb://localhost/earlypage")
