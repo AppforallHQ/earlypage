@@ -1,5 +1,8 @@
 var fixtures = [];
 
+// ADD SITES HERE //
+// Examples:
+//
 // fixtures["PROJECT"] = {
 //     name: "PROJECT",
 //     user: "PROJECT",
