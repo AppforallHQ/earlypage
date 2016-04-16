@@ -46,7 +46,7 @@ To add a new site to the earlypage instance, you have to add a key/value pair to
 `firxtures` list in `manage/index.js`, where keys are the name of the sites and
 values are another object containg the site data. As an example:
 
-```
+```javascript
 fixtures["SITE_NAME"] = {
   // Site data                **Required**
   active: true,               // The website Status
@@ -85,7 +85,7 @@ Earlypage will register or update each app definition on startup and will listen
 
 To start the service you just need to execute `manage/index.js` using node:
 
-```
+```bash
 $ ndoe index.js
 ```
 
@@ -93,7 +93,7 @@ $ ndoe index.js
 ##### Registration request
 A valid request to register user data will be as follow:
 
-```
+```javascript
 request.get({
   url: 'REGISTERED_URL_FOR_YOUR_WEBSITE/api/welcome',
   auth: {
