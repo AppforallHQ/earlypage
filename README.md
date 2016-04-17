@@ -1,6 +1,6 @@
 # Earlypage
 
-Have you ever wanter to get email address from the visitors who likes to be the
+Have you ever wanted to get email address from the visitors who likes to be the
 first one to informed when your new app releases? Have you ever faced a problem
 and wanted to notify users when everything was OK? Earlypage is what you might
 need. It provides an API to quickly switch your website to earlypage and get
